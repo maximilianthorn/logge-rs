@@ -39,7 +39,7 @@ impl log::Log for Logger {
 
             let _ = write!(
                 self.inner.lock().unwrap().writer,
-                "[{}] {:5} [{}] - {}",
+                "[{}] {:5} [{}] - {}\n",
                 now.format("%F %T").to_string().bold().bright_black(),
                 level.bold(),
                 record.target(),
