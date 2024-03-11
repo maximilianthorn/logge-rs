@@ -33,15 +33,15 @@ impl log::Log for Logger {
                 Level::Error => level.red(),
                 Level::Warn => level.yellow(),
                 Level::Info => level.green(),
-                Level::Debug => level.blue(),
-                Level::Trace => level.purple(),
+                Level::Debug => level.white(),
+                Level::Trace => level.bright_black(),
             };
 
             let _ = write!(
                 self.inner.lock().unwrap().writer,
                 "[{}] {:5} [{}] - {}\n",
                 now.format("%F %T").to_string().bold().bright_black(),
-                level.bold(),
+                level,
                 record.target(),
                 record.args()
             );
@@ -72,14 +72,14 @@ impl log::Log for Logger {
 //     LOGGER.inner.lock().unwrap().set_enabled(enabled);
 // }
 
-/// Apply `LoggerOptions` to the `Logger` and set it to the
-/// global logger.
-///
-/// *Must only be called once!*
-pub fn with_options(options: LoggerOptions) {
-    *LOGGER.inner.lock().unwrap() = options;
-    log::set_logger(&*LOGGER).unwrap();
-}
+// /// Apply `LoggerOptions` to the `Logger` and set it to the
+// /// global logger.
+// ///
+// /// *Must only be called once!*
+// pub fn with_options(options: LoggerOptions) {
+//     *LOGGER.inner.lock().unwrap() = options;
+//     log::set_logger(&*LOGGER).unwrap();
+// }
 
 pub struct LoggerOptions {
     writer: Box<dyn Write + Send + 'static>,
@@ -104,6 +104,14 @@ impl Default for LoggerOptions {
 }
 
 impl LoggerOptions {
+    /// Start the `Logger` with the given `LoggerOptions`.
+    ///
+    /// *Must only be called once!*
+    pub fn start(self) {
+        *LOGGER.inner.lock().unwrap() = self;
+        log::set_logger(&*LOGGER).unwrap();
+    }
+
     /// Sets where the logs are written to.
     ///
     /// # Examples
@@ -111,13 +119,13 @@ impl LoggerOptions {
     /// Log to a file.
     /// ```rust
     /// let file = std::fs::File::create("foo.log").unwrap();
-    /// let options = LoggerOptions::default().set_writer(file);
+    /// LoggerOptions::default().set_writer(file).start();
     /// ```
     ///
     /// Log to stdout.
     /// ```rust
     /// let stdout = std::io::stdout();
-    /// let options = LoggerOptions::default().set_writer(stdout);
+    /// ´LoggerOptions::default().set_writer(stdout).start();
     /// ```
     pub fn set_writer<T>(mut self, writer: T) -> Self
     where
@@ -139,6 +147,8 @@ impl LoggerOptions {
     ///     metadata.level() <= log::max_level()
     ///         && metadata.target().starts_with(env!("CARGO_PKG_NAME"))
     /// });
+    ///
+    /// options.start();
     /// ```
     pub fn set_enabled<T>(mut self, enabled: T) -> Self
     where
